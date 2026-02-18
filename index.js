@@ -9,7 +9,7 @@ app.get("/banned", async (req, res) => {
     const pageToken = req.query.pageToken || "";
 
     try {
-        let url = `https://apis.roblox.com/cloud/v2/universes/${UNIVERSE_ID}/user-restrictions?maxPageSize=25&filter=game_join_restriction.active=="true"`;
+        let url = `https://apis.roblox.com/cloud/v2/universes/${UNIVERSE_ID}/user-restrictions?maxPageSize=1&filter=game_join_restriction.active=="true"`;
         if (pageToken) {
             url += `&pageToken=${pageToken}`;
         }
