@@ -2,15 +2,18 @@ const express = require("express");
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-
 const API_KEY = process.env.API_KEY;
 const UNIVERSE_ID = process.env.UNIVERSE_ID;
 
 app.get("/banned", async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const PAGE_SIZE = 25;
+
     let allBanned = [];
     let nextPageToken = "";
 
     try {
+        // Fetch ALL banned users from Roblox
         do {
             let url = `https://apis.roblox.com/cloud/v2/universes/${UNIVERSE_ID}/user-restrictions?maxPageSize=100&filter=game_join_restriction.active=="true"`;
             if (nextPageToken) {
@@ -18,9 +21,7 @@ app.get("/banned", async (req, res) => {
             }
 
             const response = await fetch(url, {
-                headers: {
-                    "x-api-key": API_KEY
-                }
+                headers: { "x-api-key": API_KEY }
             });
 
             const data = await response.json();
@@ -35,15 +36,28 @@ app.get("/banned", async (req, res) => {
         const cleaned = allBanned.map(entry => {
             const userId = entry.user.split("/")[1];
             return {
-                userId: userId,
+                userId,
                 reason: entry.gameJoinRestriction.displayReason,
                 privateReason: entry.gameJoinRestriction.privateReason,
                 startTime: entry.gameJoinRestriction.startTime
             };
         });
 
-        res.json(cleaned);
+        // Pagination logic
+        const totalUsers = cleaned.length;
+        const totalPages = Math.ceil(totalUsers / PAGE_SIZE);
 
+        const start = (page - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+
+        const paginated = cleaned.slice(start, end);
+
+        res.json({
+            currentPage: page,
+            totalPages,
+            totalUsers,
+            users: paginated
+        });
 
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -51,4 +65,3 @@ app.get("/banned", async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
