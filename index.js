@@ -8,7 +8,7 @@ const API_KEY = process.env.API_KEY;
 const ADMIN_KEY = process.env.ADMIN_KEY;
 const UNIVERSE_ID = process.env.UNIVERSE_ID;
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10;
 const CACHE_TIME = 60000; // 60 seconds
 
 // ---------------------------
