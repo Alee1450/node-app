@@ -7,6 +7,10 @@ app.get('/', (req, res) => {
     res.send("Hello skibidi!");
 })
 
+app.get('/api/info', (req, res) => {
+    res.json({ message: 'Hello World!' })
+})
+
 app.listen(PORT, () => {
     console.log(`MESSAGE RECIVED: ${PORT}`);
 })
