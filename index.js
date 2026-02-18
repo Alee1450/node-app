@@ -1,28 +1,33 @@
 const express = require("express");
+const fetch = require("node-fetch");
 const app = express();
 
-const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY;
 const UNIVERSE_ID = process.env.UNIVERSE_ID;
 
 app.get("/banned", async (req, res) => {
-    const pageToken = req.query.pageToken || "";
+    let page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 1;
 
     try {
-        let url = `https://apis.roblox.com/cloud/v2/universes/${UNIVERSE_ID}/user-restrictions?maxPageSize=1&filter=game_join_restriction.active=="true"`;
-        if (pageToken) {
-            url += `&pageToken=${pageToken}`;
-        }
+        let allBanned = [];
+        let nextPageToken = "";
+        do {
+            let url = `https://apis.roblox.com/cloud/v2/universes/${UNIVERSE_ID}/user-restrictions?maxPageSize=${pageSize}&filter=game_join_restriction.active=="true"`;
+            if (nextPageToken) url += `&pageToken=${nextPageToken}`;
 
-        const response = await fetch(url, {
-            headers: { "x-api-key": API_KEY }
-        });
+            const response = await fetch(url, { headers: { "x-api-key": API_KEY } });
+            const data = await response.json();
 
-        const data = await response.json();
+            if (data.userRestrictions) {
+                allBanned.push(...data.userRestrictions);
+            }
+            nextPageToken = data.nextPageToken;
+        } while (allBanned.length < page * pageSize && nextPageToken);
 
-        const cleaned = (data.userRestrictions || []).map(entry => {
+        const start = (page - 1) * pageSize;
+        const pageData = allBanned.slice(start, start + pageSize).map(entry => {
             const userId = entry.user.split("/")[1];
-
             return {
                 userId,
                 reason: entry.gameJoinRestriction.displayReason,
@@ -32,8 +37,11 @@ app.get("/banned", async (req, res) => {
         });
 
         res.json({
-            data: cleaned,
-            nextPageToken: data.nextPageToken || null
+            page,
+            pageSize,
+            total: allBanned.length,
+            totalPages: Math.ceil(allBanned.length / pageSize),
+            data: pageData
         });
 
     } catch (err) {
@@ -41,4 +49,4 @@ app.get("/banned", async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(process.env.PORT || 3000, () => console.log("Server running"));
